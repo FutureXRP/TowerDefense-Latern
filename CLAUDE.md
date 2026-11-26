@@ -67,7 +67,7 @@ Canvas rendering plus DOM panels.
 - `syncUI()` updates the DOM panels about 10×/second.
 - Input: pointer events on the canvas. Mouse builds on one click; touch needs two taps on the same tile (first tap previews). Keys: `1–5` build, `Q W E R` powers, `Space` start wave, `U` upgrade, `P` pause, `F` speed, `Esc` cancel.
 - Modals: map select menu, boon choice, win/lose.
-- Sound: tiny WebAudio blips (`snd`), throttled per sound key. There are no audio files.
+- Sound: synthesised WebAudio effects, no audio files. `sfx(name)` plays an entry from the `SFX` table, each built from `tone()` and `noise()` layers through a master compressor, with a per-sound minimum gap and slight random pitch. Keep tower sounds low and short (they repeat constantly); never use bare high-pitched beeps, which the owner found annoying.
 - Best wave per map is stored in `localStorage` under `lw.best.<mapId>`, wrapped in try/catch.
 
 ## Hard-won gotchas
