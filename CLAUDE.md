@@ -62,7 +62,7 @@ The script ends with `if (typeof module !== 'undefined') module.exports = {...}`
 Canvas rendering plus DOM panels.
 
 - `drawMap` pre-renders the static map to an offscreen canvas (`renderMap`) on resize/new game.
-- `drawTower(c, type, lv, ang, x, y, s, time, buffed, kick)` and `drawFoe(c, type, x, y, s, time, wob, ang, slowed, hit, enraged)` draw everything procedurally with Canvas 2D; there are no image assets. `drawFoe` works in unit space (origin at the foe's centre, 1 unit = its body radius): walkers are mirrored to face their heading, Skitters and Mites are top-down and rotate. Each foe must keep its own silhouette, readable at 23 px tiles. `FICON` sets how each foe is framed in the 28 px icons.
+- `drawTower(c, type, lv, ang, x, y, s, time, buffed, kick)` and `drawFoe(c, type, x, y, s, time, wob, ang, slowed, hit, enraged)` draw everything procedurally with Canvas 2D; there are no image assets. `drawTower` works in tile units (origin at the tile centre) and every level must change the silhouette, not just a colour: taller or wider, with new parts (pennant, chimney, frost, prongs, second lamp). `drawFoe` works in unit space (origin at the foe's centre, 1 unit = its body radius): walkers are mirrored to face their heading, Skitters and Mites are top-down and rotate. Each foe must keep its own silhouette, readable at 23 px tiles. `FICON` sets how each foe is framed in the 28 px icons.
 - `render()` draws one frame: map, darkening "night" overlay that deepens with waves, fireflies, portal swirl, lantern glows, ranges, towers (with build pop and recoil), enemies (spawn fade, ice blocks, health bars), shots, fx, aim preview, red leak vignette.
 - `syncUI()` updates the DOM panels about 10×/second.
 - Input: pointer events on the canvas. Mouse builds on one click; touch needs two taps on the same tile (first tap previews). Keys: `1–5` build, `Q W E R` powers, `Space` start wave, `U` upgrade, `P` pause, `F` speed, `Esc` cancel.
@@ -149,6 +149,7 @@ The player starts with 1 charge of each and gets 1 random free charge every 3 wa
 ## Conventions
 
 - Ship first, then iterate. Keep the game playable after every commit.
+- **Merge finished work straight to `main` without asking** (owner instruction). Once a change passes the sim and the browser check, open a PR and merge it; `main` deploys to GitHub Pages automatically.
 - Prefer complete file replacements over scattered patches when rewriting a module.
 - One batch commit per working session, with a clear summary of what changed and the sim results.
 - Deterministic code for all game math. When randomness matters for replays or tests, use a seeded RNG.
