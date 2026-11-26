@@ -61,7 +61,7 @@ The script ends with `if (typeof module !== 'undefined') module.exports = {...}`
 ### 2. UI (the IIFE guarded by `typeof document !== 'undefined'`)
 Canvas rendering plus DOM panels.
 
-- `drawMap` pre-renders the static map to an offscreen canvas (`renderMap`) on resize/new game.
+- `drawMap` pre-renders the static map to an offscreen canvas (`renderMap`) on resize/new game. It works in tile units. Open grass stays calm so towers read clearly; detail goes on the road (ruts, stones, grass creeping over the edges), the obstacles (each blocked tile is a boulder, pines, a stump or a pond) and the two ends (rune stones at the fog portal, a lantern-lit palisade gate at the hearth).
 - `drawTower(c, type, lv, ang, x, y, s, time, buffed, kick)` and `drawFoe(c, type, x, y, s, time, wob, ang, slowed, hit, enraged)` draw everything procedurally with Canvas 2D; there are no image assets. `drawTower` works in tile units (origin at the tile centre) and every level must change the silhouette, not just a colour: taller or wider, with new parts (pennant, chimney, frost, prongs, second lamp). `drawFoe` works in unit space (origin at the foe's centre, 1 unit = its body radius): walkers are mirrored to face their heading, Skitters and Mites are top-down and rotate. Each foe must keep its own silhouette, readable at 23 px tiles. `FICON` sets how each foe is framed in the 28 px icons.
 - `render()` draws one frame: map, darkening "night" overlay that deepens with waves, fireflies, portal swirl, lantern glows, ranges, towers (with build pop and recoil), enemies (spawn fade, ice blocks, health bars), shots, fx, aim preview, red leak vignette.
 - `syncUI()` updates the DOM panels about 10×/second.
