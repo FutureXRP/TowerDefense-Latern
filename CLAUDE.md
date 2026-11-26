@@ -149,6 +149,7 @@ The player starts with 1 charge of each and gets 1 random free charge every 3 wa
 ## Conventions
 
 - Ship first, then iterate. Keep the game playable after every commit.
+- **Merge finished work straight to `main` without asking** (owner instruction). Once a change passes the sim and the browser check, open a PR and merge it; `main` deploys to GitHub Pages automatically.
 - Prefer complete file replacements over scattered patches when rewriting a module.
 - One batch commit per working session, with a clear summary of what changed and the sim results.
 - Deterministic code for all game math. When randomness matters for replays or tests, use a seeded RNG.
