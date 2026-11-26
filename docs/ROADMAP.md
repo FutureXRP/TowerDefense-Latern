@@ -37,7 +37,7 @@ Goal: same game, same feel, but organized so features can be added safely.
 - [ ] Balance sim as a test: fail CI if Easy/Medium/Hard drift outside the targets in `CLAUDE.md`.
 - [ ] Playwright smoke test at 1300×820, 700×760 and 390×844: pick a map, build, upgrade, sell, start a wave from the top bar (single click must work), use every power, no console errors.
 - [ ] GitHub Actions: lint, typecheck, test, build, deploy to Pages.
-- [ ] Remove the `arguments[10]` hack in `drawFoe` (pass an options object).
+- [x] Remove the `arguments[10]` hack in `drawFoe` (done with the foe art redesign; `enraged` is a named parameter).
 
 **Done when:** the deployed build is indistinguishable from the prototype, and all tests pass in CI.
 
