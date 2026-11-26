@@ -4,11 +4,13 @@
 // Loads the CORE section straight out of index.html (it is DOM-free and exports
 // through module.exports) and lets a simple bot play full runs on every map.
 //
-//   node tools/sim.mjs                 6 runs per map, bot uses powers
+//   node tools/sim.mjs                 6 runs per level, bot uses powers
 //   node tools/sim.mjs --runs 20       more runs
 //   node tools/sim.mjs --no-powers     bot never uses powers
 //   node tools/sim.mjs --waves         per-wave lives lost (finds difficulty spikes)
 //   node tools/sim.mjs --seed 7        different (still reproducible) random stream
+//   node tools/sim.mjs --tier hard     only one tier (easy, medium, hard)
+//   node tools/sim.mjs --map willow    only one level, by id
 //   node tools/sim.mjs --file path     simulate another copy of the game
 //
 // Math.random is replaced by a seeded generator, so the same code and the same
@@ -44,7 +46,7 @@ function loadCore(file) {
 }
 
 const C = loadCore(FILE);
-const { COLS, ROWS, WAVES, MAPS, TOWERS } = C;
+const { COLS, ROWS, TIERS, MAPS, TOWERS } = C;
 const DT = 1 / 60;
 
 /* ---------- bot ---------- */
@@ -120,7 +122,7 @@ function playRun(mi, seed) {
   Math.random = mulberry32(seed);
   const G = C.newGame(mi), bot = { samples: null };
   bot.samples = roadSamples(G);
-  const lost = new Array(WAVES + 1).fill(0);
+  const lost = new Array(G.map.waves + 1).fill(0);
   while (!G.over && !G.won) {
     if (G.boon) C.chooseBoon(G, BOON_PRIORITY.find(id => G.boon.includes(id)));
     spend(G, bot);
@@ -134,7 +136,7 @@ function playRun(mi, seed) {
       if (ticks > 60 * 900) throw new Error(`wave ${w} on ${G.map.id} did not finish in 15 minutes of game time`);
     }
     lost[w] = before - G.lives;
-    if (w >= WAVES && !G.over) break;
+    if (w >= G.map.waves && !G.over) break;
   }
   return { won: G.won, wave: G.wave, lives: G.lives, lost, kills: G.kills, towers: G.towers.length };
 }
@@ -143,24 +145,35 @@ function playRun(mi, seed) {
 
 const pad = (s, n) => String(s).padEnd(n), lpad = (s, n) => String(s).padStart(n);
 const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+// The three original maps keep the seeds they always had, so their rows stay comparable across versions.
+const LEGACY = { willow: 0, ford: 1, narrows: 2 };
+const seedFor = (m, mi, i) => SEED * 1000 + (m.id in LEGACY ? LEGACY[m.id] : 3 + mi) * 100 + i;
+const ONLY = opt('map', null), TIER = opt('tier', null);
 
-console.log(`Lanternwatch sim | ${RUNS} runs per map | seed ${SEED} | powers ${USE_POWERS ? 'on' : 'off'}`);
-console.log(`${pad('map', 14)}${pad('diff', 8)}${lpad('wins', 7)}${lpad('avg wave', 10)}${lpad('avg lives', 11)}${lpad('min lives', 11)}   waves reached`);
-const perMap = [];
-MAPS.forEach((m, mi) => {
-  const rs = [];
-  for (let i = 0; i < RUNS; i++) rs.push(playRun(mi, SEED * 1000 + mi * 100 + i));
-  perMap.push(rs);
-  const wins = rs.filter(r => r.won).length;
-  console.log(`${pad(m.name, 14)}${pad(m.diff, 8)}${lpad(wins + '/' + RUNS, 7)}${lpad(avg(rs.map(r => r.wave)).toFixed(1), 10)}${lpad(avg(rs.map(r => r.lives)).toFixed(1), 11)}${lpad(Math.min(...rs.map(r => r.lives)), 11)}   ${rs.map(r => r.wave).join(' ')}`);
+console.log(`Lanternwatch sim | ${RUNS} runs per level | seed ${SEED} | powers ${USE_POWERS ? 'on' : 'off'}`);
+const results = [];
+TIERS.forEach((t, ti) => {
+  if (TIER && TIER !== t.id) return;
+  const rows = [];
+  MAPS.forEach((m, mi) => {
+    if (m.tier !== ti || (ONLY && ONLY !== m.id)) return;
+    const rs = []; for (let i = 0; i < RUNS; i++) rs.push(playRun(mi, seedFor(m, mi, i)));
+    rows.push([m, rs]); results.push([m, rs]);
+  });
+  if (!rows.length) return;
+  console.log(`\n${t.name.toUpperCase()}`);
+  console.log(`${pad('#', 3)}${pad('level', 17)}${lpad('waves', 6)}${lpad('hp x', 7)}${lpad('road', 6)}${lpad('wins', 7)}${lpad('avg lives', 11)}${lpad('min lives', 11)}   waves reached`);
+  for (const [m, rs] of rows) {
+    const wins = rs.filter(r => r.won).length, L = C.newGame(MAPS.indexOf(m)).path.L;
+    console.log(`${pad(m.n + 1, 3)}${pad(m.name, 17)}${lpad(m.waves, 6)}${lpad(m.hpx, 7)}${lpad(Math.round(L), 6)}${lpad(wins + '/' + RUNS, 7)}${lpad(avg(rs.map(r => r.lives)).toFixed(1) + '/' + m.lives, 11)}${lpad(Math.min(...rs.map(r => r.lives)), 11)}   ${rs.map(r => r.wave).join(' ')}`);
+  }
 });
 
 if (SHOW_WAVES) {
-  console.log('\nAverage lives lost per wave (runs that reached the wave)');
-  console.log(pad('wave', 6) + MAPS.map(m => lpad(m.id, 10)).join(''));
-  for (let w = 1; w <= WAVES; w++) {
-    const cells = perMap.map(rs => { const a = rs.filter(r => r.wave >= w).map(r => r.lost[w]); return a.length ? avg(a).toFixed(1) : '-'; });
-    if (cells.every(c => c === '0.0' || c === '-')) continue;
-    console.log(pad(w, 6) + cells.map(c => lpad(c, 10)).join(''));
+  console.log('\nAverage lives lost per wave (only waves where something leaked)');
+  for (const [m, rs] of results) {
+    const cells = [];
+    for (let w = 1; w <= m.waves; w++) { const a = rs.filter(r => r.wave >= w).map(r => r.lost[w]); const v = a.length ? avg(a) : 0; if (v > 0) cells.push(`w${w}: ${v.toFixed(1)}`); }
+    if (cells.length) console.log(`${pad(m.name, 17)}${cells.join('  ')}`);
   }
 }
