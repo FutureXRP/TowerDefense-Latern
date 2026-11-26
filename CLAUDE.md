@@ -66,7 +66,7 @@ Canvas rendering plus DOM panels.
 - `render()` draws one frame: map, darkening "night" overlay that deepens with waves, fireflies, portal swirl, lantern glows, ranges, towers (with build pop and recoil), enemies (spawn fade, ice blocks, health bars), shots, fx, aim preview, red leak vignette.
 - `syncUI()` updates the DOM panels about 10×/second.
 - Input: pointer events on the canvas. Mouse builds on one click; touch needs two taps on the same tile (first tap previews). Keys: `1–5` build, `Q W E R` powers, `Space` start wave, `U` upgrade, `P` pause, `F` speed, `Esc` cancel.
-- Modals: map select menu, boon choice, win/lose.
+- Modals: level select (difficulty tabs, a trail of eight lantern nodes, and a card for the selected level), boon choice, win/lose (win shows stars and a Next level button).
 - Sound: synthesised WebAudio effects, no audio files. `sfx(name)` plays an entry from the `SFX` table, each built from `tone()` and `noise()` layers through a master compressor, with a per-sound minimum gap and slight random pitch. Keep tower sounds low and short (they repeat constantly); never use bare high-pitched beeps, which the owner found annoying.
 - Best wave per map is stored in `localStorage` under `lw.best.<mapId>`, wrapped in try/catch.
 
@@ -82,12 +82,20 @@ Canvas rendering plus DOM panels.
 
 ## Game design reference (current numbers)
 
-### Maps
-| id | Name | Difficulty | Lives | Gold | Enemy HP × |
-|---|---|---|---|---|---|
-| willow | Willow Bend | Easy | 25 | 240 | 0.85 |
-| ford | Crooked Ford | Medium | 20 | 220 | 1.00 |
-| narrows | The Narrows | Hard | 15 | 200 | 1.15 |
+### Levels and progression
+Three difficulty tiers (`TIERS`), each a trail of eight levels built from `ROADS`. `MAPS` is the flat list of all 24, each with `tier`, `n` (position in its tier), `waves`, `hpx`, `pts` and `rocks`.
+
+| Tier | Lives | Gold | Enemy HP × (level 1 → 8) | Road length |
+|---|---|---|---|---|
+| Easy | 25 | 240 | 0.70 → 0.85 | long, winding (32–46 tiles) |
+| Medium | 20 | 220 | 0.88 → 1.00 | medium (25–35) |
+| Hard | 15 | 200 | 1.02 → 1.15 | short (18–24) |
+
+- Waves per level, by position in the tier: 10, 10, 15, 15, 20, 20, 25, 30. A level is won when its last wave is cleared (`G.map.waves`); endless play continues after that.
+- The last level of each tier is one of the three original maps (Willow Bend, Crooked Ford, The Narrows) with its original numbers and hand-placed obstacles. Other levels get six obstacles from `scatterRocks`, which is deterministic and never calls `Math.random`.
+- Roads enter on the left edge and leave on the right, with horizontal first and last segments (`drawMap` relies on this for the portal and gate). No road may cross or overlap itself.
+- All three tiers are selectable from the start. Inside a tier, a level unlocks when the one before it has been won.
+- Stars per level: 1 for a win, 2 with at least half the starting lives left, 3 if nothing leaked. Stored in `localStorage` as `lw.stars.<levelId>`; the last tier viewed is `lw.tier`.
 
 ### Towers (levels 1 / 2 / 3; cost is the price of that level)
 | Tower | Role | Lv1 | Lv2 | Lv3 |
@@ -138,11 +146,11 @@ The player starts with 1 charge of each and gets 1 random free charge every 3 wa
 
 ## Testing
 
-- **Balance:** `node tools/sim.mjs` (options: `--runs N`, `--no-powers`, `--waves`). Run it after ANY change to towers, foes, waves, economy, powers or targeting, and include the before/after output in your summary. Targets:
-  - Easy: the bot wins essentially every run
-  - Medium: the bot wins most runs (about 4–6 of 6)
-  - Hard: the bot wins some runs (about 1–3 of 6)
+- **Balance:** `node tools/sim.mjs` (options: `--runs N`, `--no-powers`, `--waves`, `--tier easy|medium|hard`, `--map <id>`). Run it after ANY change to towers, foes, waves, economy, powers or targeting, and include the before/after output in your summary. Targets:
+  - Every level must be winnable by the bot.
+  - Difficulty should rise along each trail and from Easy to Hard.
   - No single wave should take a big bite of lives when every other wave is clean. Use `--waves` to find spikes.
+  - The current bot (a reconstruction; the original was lost) wins everything, so it only proves levels are beatable and flags spikes. It cannot yet tell "hard" from "too easy" for a human.
 - **Manual check before every commit:** open `index.html` in a browser at desktop width, at about 700 px wide, and at phone width (390 × 844). Start a run, build each tower, upgrade, sell, start a wave from the top bar, and use each power, including aiming Carpet Bomb. The console must stay free of errors.
 - Recommended next step: add a Playwright smoke test covering the manual check (see roadmap).
 
