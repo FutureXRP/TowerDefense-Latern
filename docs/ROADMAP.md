@@ -8,7 +8,7 @@ Work through the phases in order. Each phase ends with the game fully playable a
 
 - [ ] Push this repo to GitHub as-is.
 - [ ] Enable GitHub Pages: Settings → Pages → Deploy from branch → `main` / root. The game is live at `https://<user>.github.io/lanternwatch/`.
-- [ ] Add `og:title`, `og:description`, a favicon (a small lantern SVG) and a `<meta name="theme-color">`.
+- [x] Add `og:title`, `og:description`, a favicon (a small lantern SVG) and a `<meta name="theme-color">`.
 
 **Done when:** the Pages URL loads and plays on desktop and phone.
 
